@@ -1,0 +1,1900 @@
+import React, { useState, useEffect } from 'react';
+import {
+  BookOpen, Users, UserCheck, Calendar, Clock, Award, BarChart3, Plus, Trash2, Edit3,
+  FileSpreadsheet, CheckCircle2, AlertCircle, Search, Filter, LogOut, ChevronRight,
+  Send, Eye, Download, Settings, Sparkles, MessageSquare, Image, Star, Shield, RefreshCw,
+  Bell, Phone, ExternalLink, MapPin, CheckSquare, XSquare, AlertTriangle
+} from 'lucide-react';
+
+const INITIAL_USERS = {
+  guru: [
+    { id: 'g1', name: 'Ahmad Fauzi, S.Pd', email: 'ahmad@bimbel.com', phone: '081234567890', subject: 'Matematika & Fisika' },
+    { id: 'g2', name: 'Siti Rahmawati, S.Si', email: 'siti@bimbel.com', phone: '081987654321', subject: 'Bahasa Inggris & Bahasa Indonesia' },
+    { id: 'g3', name: 'Budi Santoso, S.T', email: 'budi@bimbel.com', phone: '085712345678', subject: 'Kimia & Biologi' }
+  ],
+  ortu: [
+    { id: 'o1', name: 'Bpk. Hendra Wijaya', phone: '081122334455', childName: 'Rian Wijaya', childAge: '14', classLevel: 'Kelas 8 SMP', assignedGuruId: 'g1' },
+    { id: 'o2', name: 'Ibu Nani Maryani', phone: '082233445566', childName: 'Aisha Putri', childAge: '10', classLevel: 'Kelas 5 SD', assignedGuruId: 'g2' },
+    { id: 'o3', name: 'Bpk. Ridwan', phone: '083344556677', childName: 'Kevin Ridwan', childAge: '17', classLevel: 'Kelas 11 SMA', assignedGuruId: 'g3' },
+    { id: 'o4', name: 'Ibu Pertiwi', phone: '084455667788', childName: 'Dea Ananda', childAge: '5', classLevel: 'TK / PAUD', assignedGuruId: 'g2' }
+  ]
+};
+
+const INITIAL_SCHEDULES = [
+  {
+    id: 'sch-101',
+    guruId: 'g1',
+    guruName: 'Ahmad Fauzi, S.Pd',
+    studentName: 'Rian Wijaya',
+    subject: 'Matematika',
+    day: 'Senin',
+    time: '15:30 - 17:00',
+    location: 'Rumah Siswa (Offline)',
+    status: 'Aktif',
+    notes: 'Pembahasan Aljabar & Persamaan Kuadrat'
+  },
+  {
+    id: 'sch-102',
+    guruId: 'g2',
+    guruName: 'Siti Rahmawati, S.Si',
+    studentName: 'Aisha Putri',
+    subject: 'Bahasa Inggris',
+    day: 'Selasa',
+    time: '14:00 - 15:30',
+    location: 'Sesi Online (Zoom)',
+    status: 'Aktif',
+    notes: 'Latihan Listening & Daily Activity'
+  },
+  {
+    id: 'sch-103',
+    guruId: 'g1',
+    guruName: 'Ahmad Fauzi, S.Pd',
+    studentName: 'Rian Wijaya',
+    subject: 'Fisika',
+    day: 'Rabu',
+    time: '16:00 - 17:30',
+    location: 'Rumah Siswa (Offline)',
+    status: 'Aktif',
+    notes: 'Persiapan Ulangan Harian Dinamika Gerak'
+  },
+  {
+    id: 'sch-104',
+    guruId: 'g2',
+    guruName: 'Siti Rahmawati, S.Si',
+    studentName: 'Dea Ananda',
+    subject: 'Calistung & Menggambar',
+    day: 'Kamis',
+    time: '10:00 - 11:30',
+    location: 'Studio Les Bimbel',
+    status: 'Aktif',
+    notes: 'Mengenal huruf vokal & mewarnai'
+  }
+];
+
+const INITIAL_REPORTS = [
+  {
+    id: 'rep-101',
+    date: '2026-08-01',
+    time: '15:30 - 17:00',
+    duration: '90 Menit',
+    guruId: 'g1',
+    guruName: 'Ahmad Fauzi, S.Pd',
+    studentName: 'Rian Wijaya',
+    subject: 'Matematika',
+    topic: 'Persamaan Kuadrat & Fungsi Kuadrat',
+    attendance: 'Hadir',
+    score: 85,
+    scoreLabel: 'Sangat Baik',
+    notes: 'Rian sudah memahami rumus ABC dan pemfaktoran dengan baik. Perlu latihan lagi pada soal cerita.',
+    homework: 'Buku Paket Halaman 42 No. 1 - 5',
+    photoUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500&q=80',
+    createdAt: '2026-08-01 17:15'
+  },
+  {
+    id: 'rep-102',
+    date: '2026-08-02',
+    time: '14:00 - 15:30',
+    duration: '90 Menit',
+    guruId: 'g2',
+    guruName: 'Siti Rahmawati, S.Si',
+    studentName: 'Aisha Putri',
+    subject: 'Bahasa Inggris',
+    topic: 'Simple Present Tense & Daily Activities Vocabulary',
+    attendance: 'Hadir',
+    score: 90,
+    scoreLabel: 'Sangat Baik',
+    notes: 'Aisha sangat aktif percakapan bahasa Inggris dan pronounciation semakin lancar.',
+    homework: 'Membuat 5 kalimat aktivitas harian',
+    photoUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&q=80',
+    createdAt: '2026-08-02 15:45'
+  }
+];
+
+export default function App() {
+  const [role, setRole] = useState('admin'); // 'admin' | 'guru' | 'ortu'
+  const [activeGuruId, setActiveGuruId] = useState('g1');
+  const [activeOrtuId, setActiveOrtuId] = useState('o1');
+
+  // App Data States
+  const [users, setUsers] = useState(INITIAL_USERS);
+  const [schedules, setSchedules] = useState(INITIAL_SCHEDULES);
+  const [reports, setReports] = useState(INITIAL_REPORTS);
+  
+  // Integrations & UI Modals
+  const [sheetUrl, setSheetUrl] = useState('https://docs.google.com/spreadsheets/d/1zCVhUalvmlLhiAmDAJRgiO2z6eCbwFEYS0ySzOnPb3Y/edit');
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [showAppsScriptModal, setShowAppsScriptModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3500);
+  };
+
+  // Schedule Handlers
+  const handleAddSchedule = (newSch) => {
+    const schWithId = {
+      ...newSch,
+      id: `sch-${Date.now()}`
+    };
+    setSchedules([schWithId, ...schedules]);
+    showToast(`Jadwal baru untuk ${newSch.guruName} berhasil ditambahkan!`);
+  };
+
+  const handleDeleteSchedule = (id) => {
+    setSchedules(schedules.filter(s => s.id !== id));
+    showToast('Jadwal mengajar berhasil dihapus.');
+  };
+
+  const handleUpdateScheduleStatus = (id, status) => {
+    setSchedules(schedules.map(s => s.id === id ? { ...s, status } : s));
+    showToast(`Status jadwal berhasil diperbarui menjadi ${status}.`);
+  };
+
+  // Report Handler
+  const handleAddReport = (newReport) => {
+    const reportWithId = {
+      ...newReport,
+      id: `rep-${Date.now()}`,
+      createdAt: new Date().toLocaleString('id-ID')
+    };
+    setReports([reportWithId, ...reports]);
+    showToast('Laporan mengajar berhasil disimpan & dikirim ke WhatsApp/Aplikasi!');
+
+    if (webhookUrl) {
+      fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reportWithId)
+      }).catch(err => console.log('Webhook push error:', err));
+    }
+  };
+
+  // User Handlers
+  const handleAddUser = (userType, userObj) => {
+    setUsers(prev => ({
+      ...prev,
+      [userType]: [...prev[userType], { ...userObj, id: `${userType[0]}-${Date.now()}` }]
+    }));
+    showToast(`Pengguna (${userType.toUpperCase()}) berhasil ditambahkan!`);
+  };
+
+  const handleDeleteUser = (userType, id) => {
+    setUsers(prev => ({
+      ...prev,
+      [userType]: prev[userType].filter(u => u.id !== id)
+    }));
+    showToast('Pengguna berhasil dihapus.');
+  };
+
+  // WhatsApp Helper Trigger Function
+  const handleSendWhatsAppReminder = (guruPhone, guruName, scheduleList) => {
+    let formattedPhone = guruPhone ? guruPhone.replace(/[^0-9]/g, '') : '';
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '62' + formattedPhone.slice(1);
+    }
+
+    const scheduleDetails = scheduleList.map((s, idx) => 
+      `📌 *Sesi ${idx + 1}*: ${s.studentName}\n  • Hari/Jam: ${s.day}, ${s.time}\n  • Mapel: ${s.subject}\n  • Lokasi: ${s.location}`
+    ).join('\n\n');
+
+    const message = `Yth. *${guruName}*,\n\nBerikut ingatan jadwal bimbingan belajar/les privat Anda:\n\n${scheduleDetails}\n\nMohon hadir tepat waktu dan mengisi Laporan Mengajar setelah kelas selesai. Terima kasih!\n\n_Salam, Tim Admin Bimbel_`;
+
+    const encodedMsg = encodeURIComponent(message);
+    const waUrl = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodedMsg}`;
+    
+    window.open(waUrl, '_blank');
+    showToast(`Membuka WhatsApp untuk mengirim pengingat ke ${guruName}`);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-emerald-700 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 animate-bounce border border-emerald-500">
+          <CheckCircle2 className="w-5 h-5 text-emerald-300" />
+          <span className="font-medium text-xs sm:text-sm">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Header Bar */}
+      <header className="bg-gradient-to-r from-indigo-800 via-indigo-900 to-slate-900 text-white shadow-md border-b border-indigo-700/40 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-indigo-500/20 rounded-2xl border border-indigo-400/30 backdrop-blur">
+              <BookOpen className="w-7 h-7 text-amber-300" />
+            </div>
+            <div>
+              <h1 className="font-bold text-lg leading-tight tracking-wide flex items-center gap-2">
+                Bimbel & Les Privat Center
+                <span className="text-[10px] bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-400/30 font-semibold">
+                  Sheets & WA Linked
+                </span>
+              </h1>
+              <p className="text-xs text-indigo-200">Sistem Laporan Pelaksanaan & Pengingat Jadwal Mengajar</p>
+            </div>
+          </div>
+
+          {/* Role Switcher Controls */}
+          <div className="flex items-center gap-1.5 bg-indigo-950/70 p-1.5 rounded-xl border border-indigo-500/30 self-start md:self-auto overflow-x-auto">
+            <span className="text-[11px] font-semibold px-2 text-indigo-300 uppercase tracking-wider hidden lg:inline">Peran Demo:</span>
+            
+            <button
+              onClick={() => setRole('admin')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                role === 'admin' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-200 hover:text-white hover:bg-indigo-800/50'
+              }`}
+            >
+              <Shield className="w-3.5 h-3.5 text-amber-300" />
+              Admin
+            </button>
+
+            <button
+              onClick={() => setRole('guru')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                role === 'guru' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-200 hover:text-white hover:bg-indigo-800/50'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+              Guru / Tentor
+            </button>
+
+            <button
+              onClick={() => setRole('ortu')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                role === 'ortu' ? 'bg-indigo-600 text-white shadow-md' : 'text-indigo-200 hover:text-white hover:bg-indigo-800/50'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 text-sky-300" />
+              Orang Tua
+            </button>
+          </div>
+        </div>
+
+        {/* User Context Sub-Bar */}
+        <div className="bg-indigo-950/90 px-4 sm:px-6 lg:px-8 py-2 border-t border-indigo-800/50 text-xs flex flex-wrap items-center justify-between text-indigo-200 gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-white">Mode Aktif:</span>
+            {role === 'admin' && <span className="bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-md border border-amber-500/30 font-medium">Super Admin Bimbel</span>}
+            
+            {role === 'guru' && (
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-300 font-medium">Pilih Guru:</span>
+                <select
+                  value={activeGuruId}
+                  onChange={(e) => setActiveGuruId(e.target.value)}
+                  className="bg-indigo-900 border border-indigo-700 text-white text-xs rounded-lg px-2.5 py-1 focus:ring-1 focus:ring-indigo-400 outline-none"
+                >
+                  {users.guru.map(g => (
+                    <option key={g.id} value={g.id}>{g.name} ({g.subject})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {role === 'ortu' && (
+              <div className="flex items-center gap-2">
+                <span className="text-sky-300 font-medium">Pilih Wali/Orang Tua:</span>
+                <select
+                  value={activeOrtuId}
+                  onChange={(e) => setActiveOrtuId(e.target.value)}
+                  className="bg-indigo-900 border border-indigo-700 text-white text-xs rounded-lg px-2.5 py-1 focus:ring-1 focus:ring-indigo-400 outline-none"
+                >
+                  {users.ortu.map(o => (
+                    <option key={o.id} value={o.id}>{o.name} - Orang Tua {o.childName} ({o.classLevel})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowAppsScriptModal(true)}
+            className="flex items-center gap-1.5 text-emerald-300 hover:text-emerald-200 underline underline-offset-2 transition"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            Integrasi Google Sheets
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content Body */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {role === 'admin' && (
+          <AdminDashboard
+            reports={reports}
+            schedules={schedules}
+            users={users}
+            onAddUser={handleAddUser}
+            onDeleteUser={handleDeleteUser}
+            onAddSchedule={handleAddSchedule}
+            onDeleteSchedule={handleDeleteSchedule}
+            onUpdateScheduleStatus={handleUpdateScheduleStatus}
+            onSendWAReminder={handleSendWhatsAppReminder}
+            sheetUrl={sheetUrl}
+            setSheetUrl={setSheetUrl}
+            webhookUrl={webhookUrl}
+            setWebhookUrl={setWebhookUrl}
+            openAppsScriptModal={() => setShowAppsScriptModal(true)}
+          />
+        )}
+
+        {role === 'guru' && (
+          <GuruDashboard
+            reports={reports}
+            schedules={schedules}
+            activeGuru={users.guru.find(g => g.id === activeGuruId) || users.guru[0]}
+            studentsList={users.ortu}
+            onAddReport={handleAddReport}
+            onUpdateScheduleStatus={handleUpdateScheduleStatus}
+          />
+        )}
+
+        {role === 'ortu' && (
+          <OrtuDashboard
+            reports={reports}
+            schedules={schedules}
+            activeOrtu={users.ortu.find(o => o.id === activeOrtuId) || users.ortu[0]}
+            allGuru={users.guru}
+            showToast={showToast}
+          />
+        )}
+      </main>
+
+      {/* Apps Script Helper Modal */}
+      {showAppsScriptModal && (
+        <AppsScriptModal
+          onClose={() => setShowAppsScriptModal(false)}
+          sheetUrl={sheetUrl}
+          webhookUrl={webhookUrl}
+          setWebhookUrl={setWebhookUrl}
+        />
+      )}
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-slate-400 text-xs py-6 border-t border-slate-800 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3">
+          <p>© 2026 Bimbel & Les Privat Management System. Terintegrasi WhatsApp & Google Sheets.</p>
+          <div className="flex items-center gap-4">
+            <span className="text-slate-500">Status Sync: <span className="text-emerald-400">Aktif</span></span>
+            <span className="text-slate-500">Sistem Pengingat WhatsApp Guru & Walimurid</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function AdminDashboard({
+  reports, schedules, users, onAddUser, onDeleteUser,
+  onAddSchedule, onDeleteSchedule, onUpdateScheduleStatus, onSendWAReminder,
+  sheetUrl, setSheetUrl, webhookUrl, setWebhookUrl, openAppsScriptModal
+}) {
+  const [activeTab, setActiveTab] = useState('schedules'); // 'schedules' | 'overview' | 'users' | 'reports' | 'sheets'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterSubject, setFilterSubject] = useState('Semua');
+
+  // User Form States
+  const [userType, setUserType] = useState('guru');
+  const [newGuruName, setNewGuruName] = useState('');
+  const [newGuruPhone, setNewGuruPhone] = useState('');
+  const [newGuruSubject, setNewGuruSubject] = useState('');
+  const [newOrtuName, setNewOrtuName] = useState('');
+  const [newOrtuPhone, setNewOrtuPhone] = useState('');
+  const [newChildName, setNewChildName] = useState('');
+  const [newChildAge, setNewChildAge] = useState('7');
+  const [newClassLevel, setNewClassLevel] = useState('Kelas 1-3 SD');
+  const [assignedGuru, setAssignedGuru] = useState(users.guru[0]?.id || '');
+
+  // Schedule Form States
+  const [schGuruId, setSchGuruId] = useState(users.guru[0]?.id || '');
+  const [schStudentName, setSchStudentName] = useState(users.ortu[0]?.childName || '');
+  const [schSubject, setSchSubject] = useState('Matematika');
+  const [schDay, setSchDay] = useState('Senin');
+  const [schTime, setSchTime] = useState('15:30 - 17:00');
+  const [schLocation, setSchLocation] = useState('Rumah Siswa (Offline)');
+  const [schNotes, setSchNotes] = useState('');
+
+  const handleCreateUser = (e) => {
+    e.preventDefault();
+    if (userType === 'guru') {
+      if (!newGuruName || !newGuruSubject) return;
+      onAddUser('guru', {
+        name: newGuruName,
+        phone: newGuruPhone || '08123456789',
+        email: `${newGuruName.toLowerCase().replace(/\s+/g, '')}@bimbel.com`,
+        subject: newGuruSubject
+      });
+      setNewGuruName('');
+      setNewGuruPhone('');
+      setNewGuruSubject('');
+    } else {
+      if (!newOrtuName || !newChildName) return;
+      onAddUser('ortu', {
+        name: newOrtuName,
+        phone: newOrtuPhone || '08123456789',
+        childName: newChildName,
+        childAge: newChildAge || '6',
+        classLevel: newClassLevel,
+        assignedGuruId: assignedGuru
+      });
+      setNewOrtuName('');
+      setNewOrtuPhone('');
+      setNewChildName('');
+      setNewChildAge('7');
+    }
+  };
+
+  const handleCreateSchedule = (e) => {
+    e.preventDefault();
+    const guruObj = users.guru.find(g => g.id === schGuruId);
+    if (!guruObj || !schStudentName) return;
+
+    onAddSchedule({
+      guruId: schGuruId,
+      guruName: guruObj.name,
+      studentName: schStudentName,
+      subject: schSubject,
+      day: schDay,
+      time: schTime,
+      location: schLocation,
+      status: 'Aktif',
+      notes: schNotes || 'Sesi pembelajaran rutin'
+    });
+
+    setSchNotes('');
+  };
+
+  const filteredReports = reports.filter(r => {
+    const matchSearch = r.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        r.guruName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        r.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        r.topic.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSubject = filterSubject === 'Semua' || r.subject === filterSubject;
+    return matchSearch && matchSubject;
+  });
+
+  const totalHours = reports.length * 1.5;
+
+  return (
+    <div className="space-y-6">
+      {/* Admin Sub Navigation Tabs */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setActiveTab('schedules')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 ${
+              activeTab === 'schedules' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Calendar className="w-4 h-4 text-amber-300" />
+            Jadwal Bimbel & Reminder WA
+          </button>
+
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 ${
+              activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            Ikhtisar Utama
+          </button>
+
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 ${
+              activeTab === 'users' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Pengguna ({users.guru.length + users.ortu.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('reports')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 ${
+              activeTab === 'reports' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            Laporan Mengajar ({reports.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('sheets')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2 ${
+              activeTab === 'sheets' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Google Sheets
+          </button>
+        </div>
+
+        <a
+          href={sheetUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-300 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold rounded-lg transition"
+        >
+          <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+          Buka Sheet Asli ↗
+        </a>
+      </div>
+
+      {/* TAB 1: SCHEDULE MANAGEMENT & WHATSAPP REMINDER */}
+      {activeTab === 'schedules' && (
+        <div className="space-y-6">
+          {/* Automatic Reminder Quick Actions Bar */}
+          <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-indigo-900 rounded-2xl p-5 text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-wider">
+                <Bell className="w-4 h-4 text-amber-300 animate-pulse" /> Automatic WhatsApp Reminder System
+              </div>
+              <h2 className="text-xl font-bold">Kirim Pengingat Jadwal Harian ke WhatsApp Guru</h2>
+              <p className="text-xs text-emerald-100">
+                Sistem secara otomatis merangkum jadwal bimbel aktif dan siap dikirimkan langsung ke nomor WhatsApp pengajar dengan sekali klik.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs bg-emerald-950/60 border border-emerald-400/30 text-emerald-200 px-3 py-1.5 rounded-xl font-medium">
+                {schedules.length} Jadwal Terdaftar
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Form Input Jadwal Bimbel */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit space-y-4">
+              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Plus className="w-5 h-5 text-indigo-600" />
+                Atur Jadwal Bimbel Baru
+              </h3>
+
+              <form onSubmit={handleCreateSchedule} className="space-y-3 text-xs">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Pilih Guru / Tentor Pengampu</label>
+                  <select
+                    value={schGuruId}
+                    onChange={e => setSchGuruId(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  >
+                    {users.guru.map(g => (
+                      <option key={g.id} value={g.id}>{g.name} ({g.subject})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Pilih Siswa / Anak</label>
+                  <select
+                    value={schStudentName}
+                    onChange={e => setSchStudentName(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  >
+                    {users.ortu.map(o => (
+                      <option key={o.id} value={o.childName}>
+                        {o.childName} ({o.classLevel} - Usia {o.childAge} Thn)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Mata Pelajaran</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Matematika / Mengaji"
+                    value={schSubject}
+                    onChange={e => setSchSubject(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Hari Pertemuan</label>
+                    <select
+                      value={schDay}
+                      onChange={e => setSchDay(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    >
+                      <option value="Senin">Senin</option>
+                      <option value="Selasa">Selasa</option>
+                      <option value="Rabu">Rabu</option>
+                      <option value="Kamis">Kamis</option>
+                      <option value="Jumat">Jumat</option>
+                      <option value="Sabtu">Sabtu</option>
+                      <option value="Minggu">Minggu</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Waktu Sesi</label>
+                    <input
+                      type="text"
+                      placeholder="15:30 - 17:00"
+                      value={schTime}
+                      onChange={e => setSchTime(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Lokasi Sesi / Mode</label>
+                  <select
+                    value={schLocation}
+                    onChange={e => setSchLocation(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                  >
+                    <option value="Rumah Siswa (Offline)">Rumah Siswa (Offline)</option>
+                    <option value="Studio Les Bimbel">Studio Les Bimbel</option>
+                    <option value="Sesi Online (Zoom)">Sesi Online (Zoom)</option>
+                    <option value="Sesi Online (Google Meet)">Sesi Online (Google Meet)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Catatan / Pokok Bahasan (Opsional)</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Persiapan UTS / Latihan Dasar"
+                    value={schNotes}
+                    onChange={e => setSchNotes(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center justify-center gap-2 mt-2"
+                >
+                  <Plus className="w-4 h-4" /> Simpan Jadwal Bimbel
+                </button>
+              </form>
+            </div>
+
+            {/* Teacher Specific Schedule Lists & WhatsApp Trigger Actions */}
+            <div className="lg:col-span-2 space-y-6">
+              {users.guru.map(guru => {
+                const guruSchedules = schedules.filter(s => s.guruId === guru.id);
+                return (
+                  <div key={guru.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-indigo-600" />
+                          {guru.name}
+                        </h4>
+                        <p className="text-xs text-slate-500">Mapel: {guru.subject} | WA: <span className="font-medium text-slate-700">{guru.phone}</span></p>
+                      </div>
+
+                      <button
+                        onClick={() => onSendWAReminder(guru.phone, guru.name, guruSchedules)}
+                        disabled={guruSchedules.length === 0}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                          guruSchedules.length > 0
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <MessageSquare className="w-4 h-4 text-emerald-200" />
+                        Kirim Pengingat WA Guru
+                      </button>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      {guruSchedules.map(s => (
+                        <div key={s.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-100">
+                                {s.day} ({s.time})
+                              </span>
+                              <span className="text-xs font-semibold text-slate-800">{s.studentName}</span>
+                              <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                {s.subject}
+                              </span>
+                            </div>
+
+                            <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-slate-400" /> {s.location}
+                              {s.notes && <span className="text-slate-400">| Note: {s.notes}</span>}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-center">
+                            <select
+                              value={s.status}
+                              onChange={e => onUpdateScheduleStatus(s.id, e.target.value)}
+                              className={`text-xs font-semibold px-2 py-1 rounded-lg border outline-none ${
+                                s.status === 'Aktif' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                              }`}
+                            >
+                              <option value="Aktif">Aktif</option>
+                              <option value="Selesai">Selesai</option>
+                              <option value="Dibatalkan">Dibatalkan</option>
+                            </select>
+
+                            <button
+                              onClick={() => onDeleteSchedule(s.id)}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                              title="Hapus Jadwal"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {guruSchedules.length === 0 && (
+                        <div className="p-5 text-center text-xs text-slate-400 italic">
+                          Belum ada jadwal bimbel diatur untuk {guru.name}.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: OVERVIEW */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Laporan Masuk</p>
+                <h3 className="text-2xl font-bold text-slate-800 mt-1">{reports.length} Sesi</h3>
+                <p className="text-xs text-emerald-600 font-medium mt-1">↑ Real-time synced</p>
+              </div>
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                <BookOpen className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jadwal Aktif</p>
+                <h3 className="text-2xl font-bold text-slate-800 mt-1">{schedules.length} Sesi</h3>
+                <p className="text-xs text-indigo-600 font-medium mt-1">Sesi terhubung ke guru</p>
+              </div>
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                <Calendar className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Siswa Terdaftar</p>
+                <h3 className="text-2xl font-bold text-slate-800 mt-1">{users.ortu.length} Siswa</h3>
+                <p className="text-xs text-sky-600 font-medium mt-1">Termasuk TK / PAUD</p>
+              </div>
+              <div className="p-3 bg-sky-50 text-sky-600 rounded-2xl">
+                <Users className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estimasi Jam Les</p>
+                <h3 className="text-2xl font-bold text-slate-800 mt-1">{totalHours} Jam</h3>
+                <p className="text-xs text-emerald-600 font-medium mt-1">Total durasi les</p>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                <Clock className="w-6 h-6" />
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats per Guru Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm sm:text-base">
+                <Award className="w-5 h-5 text-indigo-600" />
+                Rekap Sesi Mengajar & Jadwal Per Guru
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th className="p-4">Nama Tentor / Guru</th>
+                    <th className="p-4">Mata Pelajaran Utama</th>
+                    <th className="p-4">Jadwal Sesi Bimbel</th>
+                    <th className="p-4">Total Laporan Selesai</th>
+                    <th className="p-4">Status Pengingat WA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {users.guru.map(g => {
+                    const countReports = reports.filter(r => r.guruId === g.id).length;
+                    const countSchedules = schedules.filter(s => s.guruId === g.id).length;
+                    return (
+                      <tr key={g.id} className="hover:bg-slate-50/80 transition">
+                        <td className="p-4 font-semibold text-slate-800">{g.name}</td>
+                        <td className="p-4">{g.subject}</td>
+                        <td className="p-4 font-bold text-amber-600">{countSchedules} Jadwal</td>
+                        <td className="p-4 font-bold text-indigo-600">{countReports} Sesi</td>
+                        <td className="p-4">
+                          <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Siap Dikirim
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: USER MANAGEMENT */}
+      {activeTab === 'users' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Add User Form */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit space-y-4">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 text-base">
+              <Plus className="w-5 h-5 text-indigo-600" />
+              Tambah Pengguna Baru
+            </h3>
+
+            <form onSubmit={handleCreateUser} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1">Tipe Pengguna</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUserType('guru')}
+                    className={`py-2 text-xs font-semibold rounded-xl border transition ${
+                      userType === 'guru' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    Guru / Tentor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserType('ortu')}
+                    className={`py-2 text-xs font-semibold rounded-xl border transition ${
+                      userType === 'ortu' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    Orang Tua & Siswa
+                  </button>
+                </div>
+              </div>
+
+              {userType === 'guru' ? (
+                <>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Nama Lengkap Guru</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Rina Amalia, S.Pd"
+                      value={newGuruName}
+                      onChange={e => setNewGuruName(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">No. WhatsApp Guru</label>
+                    <input
+                      type="text"
+                      placeholder="0812xxxxxxxx"
+                      value={newGuruPhone}
+                      onChange={e => setNewGuruPhone(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Mata Pelajaran Utama</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: IPA & Bahasa Inggris"
+                      value={newGuruSubject}
+                      onChange={e => setNewGuruSubject(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Nama Wali / Orang Tua</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Bpk. Gunawan"
+                      value={newOrtuName}
+                      onChange={e => setNewOrtuName(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">No. WhatsApp Orang Tua</label>
+                    <input
+                      type="text"
+                      placeholder="0812xxxxxxxx"
+                      value={newOrtuPhone}
+                      onChange={e => setNewOrtuPhone(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Nama Siswa / Anak</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Danang Gunawan"
+                      value={newChildName}
+                      onChange={e => setNewChildName(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      required
+                    />
+                  </div>
+
+                  {/* UPDATE REQUIREMENT 4: childAge input & classLevel updated options */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 block mb-1">Usia Anak (Tahun)</label>
+                      <input
+                        type="number"
+                        min="2"
+                        max="20"
+                        placeholder="Contoh: 5"
+                        value={newChildAge}
+                        onChange={e => setNewChildAge(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 block mb-1">Tingkat Kelas</label>
+                      <select
+                        value={newClassLevel}
+                        onChange={e => setNewClassLevel(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                      >
+                        <option value="Belum Sekolah">Belum Sekolah</option>
+                        <option value="TK / PAUD">TK / PAUD</option>
+                        <option value="Kelas 1-3 SD">Kelas 1-3 SD</option>
+                        <option value="Kelas 4-6 SD">Kelas 4-6 SD</option>
+                        <option value="Kelas 7-9 SMP">Kelas 7-9 SMP</option>
+                        <option value="Kelas 10-12 SMA">Kelas 10-12 SMA</option>
+                        <option value="Umum / Mengaji">Umum / Mengaji</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1">Tentor Utama</label>
+                    <select
+                      value={assignedGuru}
+                      onChange={e => setAssignedGuru(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                    >
+                      {users.guru.map(g => (
+                        <option key={g.id} value={g.id}>{g.name} ({g.subject})</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition shadow-sm flex items-center justify-center gap-2 mt-2"
+              >
+                <Plus className="w-4 h-4" /> Simpan Data Pengguna
+              </button>
+            </form>
+          </div>
+
+          {/* User List Columns */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Daftar Guru */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  Daftar Guru / Tentor ({users.guru.length})
+                </h4>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {users.guru.map(g => (
+                  <div key={g.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition">
+                    <div>
+                      <h5 className="font-bold text-slate-800 text-sm">{g.name}</h5>
+                      <p className="text-xs text-slate-500 mt-0.5">Mapel: <span className="text-slate-700 font-medium">{g.subject}</span> | WA: {g.phone}</p>
+                    </div>
+                    <button
+                      onClick={() => onDeleteUser('guru', g.id)}
+                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition text-xs flex items-center gap-1"
+                      title="Hapus Guru"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Daftar Orang Tua & Siswa */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                  <Users className="w-4 h-4 text-sky-600" />
+                  Daftar Orang Tua & Siswa ({users.ortu.length})
+                </h4>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {users.ortu.map(o => {
+                  const guruAssigned = users.guru.find(g => g.id === o.assignedGuruId);
+                  return (
+                    <div key={o.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition">
+                      <div>
+                        <h5 className="font-bold text-slate-800 text-sm">{o.name} <span className="text-xs font-normal text-slate-500">(Wali dari {o.childName})</span></h5>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Siswa: <span className="text-indigo-600 font-medium">{o.childName}</span> ({o.classLevel} - Usia <span className="font-bold text-amber-600">{o.childAge || '7'} Thn</span>) | Tentor: {guruAssigned ? guruAssigned.name : '-'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => onDeleteUser('ortu', o.id)}
+                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition text-xs flex items-center gap-1"
+                        title="Hapus Orang Tua"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: REPORTS LEDGER */}
+      {activeTab === 'reports' && (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="relative w-full md:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Cari siswa, tentor, materi..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Filter className="w-4 h-4 text-slate-500" />
+              <select
+                value={filterSubject}
+                onChange={e => setFilterSubject(e.target.value)}
+                className="px-3 py-2 text-sm border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="Semua">Semua Mapel</option>
+                <option value="Matematika">Matematika</option>
+                <option value="Fisika">Fisika</option>
+                <option value="Bahasa Inggris">Bahasa Inggris</option>
+                <option value="Calistung & Menggambar">Calistung & Menggambar</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th className="p-4">Tanggal & Waktu</th>
+                    <th className="p-4">Siswa</th>
+                    <th className="p-4">Tentor</th>
+                    <th className="p-4">Mata Pelajaran & Materi</th>
+                    <th className="p-4">Nilai / Pemahaman</th>
+                    <th className="p-4">Dokumentasi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredReports.map(rep => (
+                    <tr key={rep.id} className="hover:bg-slate-50 transition">
+                      <td className="p-4 whitespace-nowrap">
+                        <div className="font-semibold text-slate-800">{rep.date}</div>
+                        <div className="text-xs text-slate-400">{rep.time} ({rep.duration})</div>
+                      </td>
+                      <td className="p-4 font-semibold text-indigo-600 whitespace-nowrap">{rep.studentName}</td>
+                      <td className="p-4 text-slate-700 whitespace-nowrap">{rep.guruName}</td>
+                      <td className="p-4 max-w-xs">
+                        <span className="inline-block px-2 py-0.5 text-xs font-semibold bg-indigo-50 text-indigo-700 rounded-md mb-1">
+                          {rep.subject}
+                        </span>
+                        <div className="text-xs text-slate-700 font-medium line-clamp-2">{rep.topic}</div>
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                          {rep.score}/100 ({rep.scoreLabel})
+                        </span>
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        {rep.photoUrl ? (
+                          <a href={rep.photoUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 underline flex items-center gap-1">
+                            <Image className="w-3.5 h-3.5" /> Lihat Foto
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400">Tidak ada</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredReports.length === 0 && (
+                    <tr>
+                      <td colSpan="6" className="p-8 text-center text-slate-400 text-sm">
+                        Tidak ada laporan mengajar yang cocok dengan pencarian.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: GOOGLE SHEETS SYNC SETUP */}
+      {activeTab === 'sheets' && (
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+              <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
+              Pengaturan Koneksi Google Sheet Pelaksanaan Les
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Hubungkan tautan Google Sheet tempat kamu mencatat laporan agar data otomatis tersinkronisasi.
+            </p>
+          </div>
+
+          <div className="space-y-4 max-w-2xl">
+            <div>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block mb-1">
+                URL Google Sheet Aktif
+              </label>
+              <input
+                type="text"
+                value={sheetUrl}
+                onChange={e => setSheetUrl(e.target.value)}
+                className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Link spreadsheet saat ini: <a href={sheetUrl} target="_blank" rel="noreferrer" className="text-emerald-600 underline">Buka Sheet</a>
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block mb-1">
+                Google Apps Script Webhook URL (Opsional untuk Otomatisasi Input)
+              </label>
+              <input
+                type="text"
+                placeholder="https://script.google.com/macros/s/.../exec"
+                value={webhookUrl}
+                onChange={e => setWebhookUrl(e.target.value)}
+                className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Jika diisi, setiap kali Guru mengirim laporan di web ini, data akan langsung otomatis terinput menjadi baris baru di Google Sheet milikmu.
+              </p>
+            </div>
+
+            <button
+              onClick={openAppsScriptModal}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition shadow-sm flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" /> Dapatkan Kode Google Apps Script
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GuruDashboard({ reports, schedules, activeGuru, studentsList, onAddReport, onUpdateScheduleStatus }) {
+  const [showForm, setShowForm] = useState(false);
+
+  // Guru Specific Schedules & Notifications
+  const guruSchedules = schedules.filter(s => s.guruId === activeGuru.id);
+  const activeSchedulesCount = guruSchedules.filter(s => s.status === 'Aktif').length;
+
+  // Form Fields
+  const assignedStudents = studentsList.filter(s => s.assignedGuruId === activeGuru.id);
+  const [selectedStudent, setSelectedStudent] = useState(assignedStudents[0]?.childName || 'Rian Wijaya');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState('15:30 - 17:00');
+  const [subject, setSubject] = useState('Matematika');
+  const [topic, setTopic] = useState('');
+  const [attendance, setAttendance] = useState('Hadir');
+  const [score, setScore] = useState(85);
+  const [notes, setNotes] = useState('');
+  const [homework, setHomework] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+
+  const guruReports = reports.filter(r => r.guruId === activeGuru.id);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!topic || !notes) return;
+
+    let scoreLabel = 'Cukup';
+    if (score >= 85) scoreLabel = 'Sangat Baik';
+    else if (score >= 75) scoreLabel = 'Baik';
+
+    onAddReport({
+      date,
+      time,
+      duration: '90 Menit',
+      guruId: activeGuru.id,
+      guruName: activeGuru.name,
+      studentName: selectedStudent,
+      subject,
+      topic,
+      attendance,
+      score: Number(score),
+      scoreLabel,
+      notes,
+      homework: homework || 'Tidak Ada PR',
+      photoUrl: photoUrl || 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=500&q=80'
+    });
+
+    setTopic('');
+    setNotes('');
+    setHomework('');
+    setShowForm(false);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Guru Welcome Card */}
+      <div className="bg-gradient-to-r from-emerald-700 via-teal-800 to-indigo-900 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-1">
+            <UserCheck className="w-4 h-4" /> Mode Guru / Tentor Bimbel
+          </div>
+          <h2 className="text-2xl font-bold">{activeGuru.name}</h2>
+          <p className="text-xs text-emerald-100 mt-0.5">Spesialisasi: {activeGuru.subject} | WA: {activeGuru.phone}</p>
+        </div>
+
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold text-sm rounded-xl transition shadow-lg flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          {showForm ? 'Tutup Form' : 'Isi Laporan Mengajar Harian'}
+        </button>
+      </div>
+
+      {/* UPDATE REQUIREMENT 5: Guru Notifications & Schedule Cards */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-amber-500 text-white rounded-xl">
+            <Bell className="w-5 h-5 animate-bounce" />
+          </div>
+          <div>
+            <h4 className="font-bold text-amber-900 text-sm">Notifikasi Pengingat Jadwal Mengajar Admin</h4>
+            <p className="text-xs text-amber-800">
+              Anda memiliki <strong className="text-amber-950">{activeSchedulesCount} jadwal aktif</strong> yang telah dijadwalkan oleh Super Admin.
+            </p>
+          </div>
+        </div>
+
+        <span className="text-xs font-bold text-amber-900 bg-amber-200/80 px-3 py-1 rounded-full border border-amber-300/60 whitespace-nowrap">
+          Terhubung Realtime
+        </span>
+      </div>
+
+      {/* Guru Scheduled Classes List */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-indigo-600" />
+            Jadwal Bimbel Saya ({guruSchedules.length})
+          </h3>
+          <span className="text-xs text-slate-400">Diatur oleh Admin</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {guruSchedules.map(s => (
+            <div key={s.id} className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/30 space-y-2 relative">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-md">
+                    {s.day} ({s.time})
+                  </span>
+                  <h4 className="font-bold text-slate-800 text-base mt-2">{s.studentName}</h4>
+                </div>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                  s.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                }`}>
+                  {s.status}
+                </span>
+              </div>
+
+              <p className="text-xs text-slate-700 font-medium">Mapel: <span className="text-indigo-600 font-bold">{s.subject}</span></p>
+              <p className="text-xs text-slate-500 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" /> Lokasi: {s.location}
+              </p>
+              {s.notes && <p className="text-xs text-slate-500 italic bg-white p-2 rounded border border-slate-100">"{s.notes}"</p>}
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-100">
+                <button
+                  onClick={() => {
+                    setSelectedStudent(s.studentName);
+                    setSubject(s.subject);
+                    setTime(s.time);
+                    setShowForm(true);
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition"
+                >
+                  + Buat Laporan Dari Jadwal Ini
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {guruSchedules.length === 0 && (
+            <p className="text-xs text-slate-400 italic col-span-2 text-center py-6">
+              Belum ada jadwal mengajar yang diisikan oleh Admin untuk Anda.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Form Input Laporan Mengajar */}
+      {showForm && (
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-md border-2 border-emerald-500/30 space-y-5">
+          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+            <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-emerald-600" />
+              Form Pelaksanaan Bimbingan Belajar Les Privat
+            </h3>
+            <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-semibold">
+              Otomatis Terkirim ke Orang Tua
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Nama Siswa</label>
+              <select
+                value={selectedStudent}
+                onChange={e => setSelectedStudent(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+              >
+                {studentsList.map(s => (
+                  <option key={s.id} value={s.childName}>{s.childName} ({s.classLevel} - Usia {s.childAge} Thn)</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Tanggal Pertemuan</label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Waktu Sesi</label>
+              <input
+                type="text"
+                placeholder="15:30 - 17:00"
+                value={time}
+                onChange={e => setTime(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Mata Pelajaran</label>
+              <select
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+              >
+                <option value="Matematika">Matematika</option>
+                <option value="Fisika">Fisika</option>
+                <option value="Kimia">Kimia</option>
+                <option value="Biologi">Biologi</option>
+                <option value="Bahasa Inggris">Bahasa Inggris</option>
+                <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                <option value="IPA Terpadu">IPA Terpadu</option>
+                <option value="IPS Terpadu">IPS Terpadu</option>
+                <option value="Calistung & Menggambar">Calistung & Menggambar</option>
+                <option value="Mengaji / Iqro">Mengaji / Iqro</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Kehadiran Siswa</label>
+              <select
+                value={attendance}
+                onChange={e => setAttendance(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+              >
+                <option value="Hadir">Hadir Tepat Waktu</option>
+                <option value="Izin">Izin / Halangan</option>
+                <option value="Sakit">Sakit</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                Tingkat Pemahaman Siswa (1-100): <span className="font-bold text-emerald-600">{score}</span>
+              </label>
+              <input
+                type="range"
+                min="50"
+                max="100"
+                value={score}
+                onChange={e => setScore(e.target.value)}
+                className="w-full accent-emerald-600 mt-2"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">Materi / Topik Yang Diajarkan</label>
+            <input
+              type="text"
+              placeholder="Contoh: Bab 4 Persamaan Kuadrat / Latihan Abjad & Mewarnai"
+              value={topic}
+              onChange={e => setTopic(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Catatan Perkembangan / Sikap Siswa</label>
+              <textarea
+                rows="3"
+                placeholder="Tulis ringkasan kemajuan belajar anak dan bagian yang perlu dilatih lagi..."
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">Tugas / PR Yang Diberikan</label>
+              <textarea
+                rows="3"
+                placeholder="Contoh: Soal Latihan No. 1-5 Halaman 50..."
+                value={homework}
+                onChange={e => setHomework(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-slate-700 block mb-1">URL Foto Dokumentasi / Papan Tulis (Opsional)</label>
+            <input
+              type="text"
+              placeholder="https://images.unsplash.com/..."
+              value={photoUrl}
+              onChange={e => setPhotoUrl(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="px-4 py-2 border border-slate-300 text-slate-600 rounded-xl text-sm font-semibold hover:bg-slate-100"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-md transition flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" /> Kirim Laporan Mengajar
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Teaching History list */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-emerald-600" />
+          Riwayat Laporan Mengajar Anda ({guruReports.length})
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {guruReports.map(rep => (
+            <div key={rep.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2 relative">
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                    {rep.subject}
+                  </span>
+                  <h4 className="font-bold text-slate-800 text-sm mt-1">{rep.studentName}</h4>
+                </div>
+                <span className="text-xs font-semibold text-slate-500">{rep.date}</span>
+              </div>
+
+              <p className="text-xs text-slate-700 font-medium">Topik: {rep.topic}</p>
+              <p className="text-xs text-slate-600 italic bg-white p-2 rounded border border-slate-100">"{rep.notes}"</p>
+
+              <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-200 text-slate-500">
+                <span>Pemahaman: <strong className="text-emerald-700">{rep.score}/100</strong></span>
+                <span>PR: {rep.homework}</span>
+              </div>
+            </div>
+          ))}
+
+          {guruReports.length === 0 && (
+            <p className="text-xs text-slate-400 italic col-span-2 text-center py-6">
+              Belum ada laporan mengajar yang dikirim oleh {activeGuru.name}.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrtuDashboard({ reports, schedules, activeOrtu, allGuru, showToast }) {
+  const [parentFeedback, setParentFeedback] = useState('');
+  
+  // Filter reports and schedules specifically for this parent's child
+  const childReports = reports.filter(r => r.studentName.toLowerCase() === activeOrtu.childName.toLowerCase());
+  const childSchedules = schedules.filter(s => s.studentName.toLowerCase() === activeOrtu.childName.toLowerCase());
+  const assignedGuru = allGuru.find(g => g.id === activeOrtu.assignedGuruId);
+
+  // Compute stats
+  const totalSessions = childReports.length;
+  const avgScore = totalSessions > 0
+    ? Math.round(childReports.reduce((acc, curr) => acc + curr.score, 0) / totalSessions)
+    : 0;
+
+  const handleSendFeedback = (e) => {
+    e.preventDefault();
+    if (!parentFeedback) return;
+    showToast('Tanggapan/Catatan berhasil dikirimkan ke Tentor Bimbel!');
+    setParentFeedback('');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Student Banner */}
+      <div className="bg-gradient-to-r from-sky-700 via-indigo-800 to-slate-900 rounded-2xl p-6 text-white shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-sky-300 text-xs font-semibold uppercase tracking-wider mb-1">
+            <Users className="w-4 h-4" /> Portal Laporan & Jadwal Belajar Anak
+          </div>
+          <h2 className="text-2xl font-bold">{activeOrtu.childName}</h2>
+          <p className="text-xs text-indigo-200 mt-0.5">
+            Tingkat: <span className="text-white font-semibold">{activeOrtu.classLevel}</span> | Usia Anak: <span className="text-amber-300 font-bold">{activeOrtu.childAge || '7'} Tahun</span> | Wali: {activeOrtu.name}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 bg-white/10 p-3 rounded-xl backdrop-blur border border-white/10">
+          <Award className="w-8 h-8 text-amber-300" />
+          <div>
+            <p className="text-xs text-indigo-200">Rata-Rata Pemahaman</p>
+            <p className="text-xl font-bold text-white">{avgScore} / 100</p>
+          </div>
+        </div>
+      </div>
+
+      {/* UPDATE REQUIREMENT 6: Schedule View for Parents */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-indigo-600" />
+            Jadwal Bimbel Belajar {activeOrtu.childName}
+          </h3>
+          <span className="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2.5 py-1 rounded-full border border-indigo-100">
+            Jadwal Terjadwal Admin
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {childSchedules.map(sch => (
+            <div key={sch.id} className="p-4 rounded-xl border border-sky-100 bg-sky-50/40 space-y-2">
+              <div className="flex justify-between items-start">
+                <span className="text-xs font-bold text-sky-800 bg-sky-100 px-2.5 py-0.5 rounded-md border border-sky-200">
+                  Hari {sch.day} ({sch.time})
+                </span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  sch.status === 'Aktif' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {sch.status}
+                </span>
+              </div>
+
+              <h4 className="font-bold text-slate-800 text-sm mt-1">{sch.subject}</h4>
+              <p className="text-xs text-slate-600">Pengajar: <strong className="text-indigo-700">{sch.guruName}</strong></p>
+              <p className="text-xs text-slate-500 flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-slate-400" /> Lokasi: {sch.location}
+              </p>
+              {sch.notes && <p className="text-xs text-slate-500 italic bg-white p-2 rounded border border-slate-100">"{sch.notes}"</p>}
+            </div>
+          ))}
+
+          {childSchedules.length === 0 && (
+            <p className="text-xs text-slate-400 italic col-span-2 text-center py-6">
+              Belum ada jadwal les rutin yang terdaftar untuk {activeOrtu.childName}.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-xs text-slate-500 font-medium">Total Sesi Les Dilalui</p>
+          <h3 className="text-2xl font-bold text-slate-800 mt-1">{totalSessions} Pertemuan</h3>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-xs text-slate-500 font-medium">Tentor Pengampu Utama</p>
+          <h3 className="text-base font-bold text-indigo-600 mt-1">{assignedGuru ? assignedGuru.name : 'Tentor Bimbel'}</h3>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <p className="text-xs text-slate-500 font-medium">Status Kehadiran</p>
+          <h3 className="text-2xl font-bold text-emerald-600 mt-1">100% Tepat Waktu</h3>
+        </div>
+      </div>
+
+      {/* Timeline Feed of Lessons */}
+      <div className="space-y-4">
+        <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-indigo-600" />
+          Feed Laporan Harian Belajar {activeOrtu.childName}
+        </h3>
+
+        {childReports.map(rep => (
+          <div key={rep.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs uppercase">
+                  {rep.subject}
+                </span>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-base">{rep.topic}</h4>
+                  <p className="text-xs text-slate-500">Oleh: {rep.guruName}</p>
+                </div>
+              </div>
+
+              <div className="text-left sm:text-right">
+                <span className="text-xs font-semibold text-slate-500 block">{rep.date} ({rep.time})</span>
+                <span className="inline-block mt-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  Nilai: {rep.score}/100 ({rep.scoreLabel})
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
+                <span className="font-semibold text-slate-700 block">📝 Catatan Perkembangan dari Tentor:</span>
+                <p className="text-slate-600 leading-relaxed">{rep.notes}</p>
+              </div>
+
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
+                <span className="font-semibold text-slate-700 block">📌 Tugas / PR Anak:</span>
+                <p className="text-indigo-700 font-medium">{rep.homework}</p>
+              </div>
+            </div>
+
+            {rep.photoUrl && (
+              <div className="pt-2">
+                <span className="text-xs font-medium text-slate-500 block mb-1">Dokumentasi Sesi Belajar:</span>
+                <img
+                  src={rep.photoUrl}
+                  alt="Dokumentasi Les"
+                  className="w-full max-h-48 object-cover rounded-xl border border-slate-200"
+                />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {childReports.length === 0 && (
+          <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-2">
+            <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+            <p className="text-sm font-semibold text-slate-700">Belum Ada Laporan Mengajar Terbaru</p>
+            <p className="text-xs text-slate-500">Tentor belum menginputkan sesi belajar untuk {activeOrtu.childName}.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Parent Feedback Box */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+        <h4 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-indigo-600" />
+          Kirim Catatan / Masukan Balasan ke Tentor
+        </h4>
+        <form onSubmit={handleSendFeedback} className="space-y-3">
+          <textarea
+            rows="3"
+            placeholder="Tuliskan jika ada kendala, permintaan materi khusus, atau ucapan terima kasih..."
+            value={parentFeedback}
+            onChange={e => setParentFeedback(e.target.value)}
+            className="w-full p-3 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition"
+          >
+            Kirim Masukan
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AppsScriptModal({ onClose, sheetUrl, webhookUrl, setWebhookUrl }) {
+  const sampleAppsScriptCode = `
+// ========================================================
+// KODE GOOGLE APPS SCRIPT UNTUK OTOMATISASI GOOGLE SHEET
+// Tempelkan kode ini di Google Sheet: Extension > Apps Script
+// ========================================================
+
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    
+    // Menambahkan baris baru secara otomatis sesuai input Web App
+    sheet.appendRow([
+      data.createdAt || new Date(),
+      data.date,
+      data.guruName,
+      data.studentName,
+      data.subject,
+      data.topic,
+      data.score,
+      data.scoreLabel,
+      data.notes,
+      data.homework,
+      data.photoUrl
+    ]);
+    
+    return ContentService.createTextOutput(JSON.stringify({"result": "success"}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({"result": "error", "message": err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+  `.trim();
+
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(sampleAppsScriptCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+        return;
+      }
+    } catch (err) {
+      console.warn('Clipboard API blocked, using fallback:', err);
+    }
+
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = sampleAppsScriptCode;
+      textArea.style.position = 'fixed';
+      textArea.style.top = '0';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+
+      if (successful) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch (fallbackErr) {
+      console.error('Fallback copy failed:', fallbackErr);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 my-8">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
+            <h3 className="font-bold text-slate-800 text-lg">Panduan Integrasi Google Sheets</h3>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+        </div>
+
+        <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
+          <p className="font-semibold text-slate-800">Langkah-langkah menghubungkan Google Sheet secara Real-Time:</p>
+          <ol className="list-decimal pl-4 space-y-1.5">
+            <li>Buka Spreadsheet Google Sheet kamu di browser.</li>
+            <li>Klik menu <strong className="text-indigo-600">Ekstensi (Extensions)</strong> &gt; <strong className="text-indigo-600">Apps Script</strong>.</li>
+            <li>Hapus semua isi kode default, lalu tempelkan (paste) kode di bawah ini.</li>
+            <li>Klik tombol <strong className="text-indigo-600">Deploy</strong> &gt; <strong className="text-indigo-600">New Deployment</strong>.</li>
+            <li>Pilih jenis deployment: <strong className="text-emerald-700">Web App</strong>, atur access ke <strong className="text-emerald-700">"Anyone" (Siapa Saja)</strong>, lalu simpan.</li>
+            <li>Salin URL Web App yang dihasilkan dan masukkan ke dalam input Webhook di web ini!</li>
+          </ol>
+        </div>
+
+        <div className="relative bg-slate-900 text-slate-200 rounded-xl p-4 font-mono text-xs overflow-x-auto max-h-56 border border-slate-800">
+          <button
+            onClick={handleCopy}
+            className="absolute top-3 right-3 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-sans text-xs rounded-lg transition"
+          >
+            {copied ? '✓ Tersalin!' : 'Salin Kode'}
+          </button>
+          <pre>{sampleAppsScriptCode}</pre>
+        </div>
+
+        <div className="pt-2 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs rounded-xl shadow transition"
+          >
+            Tutup Panduan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
